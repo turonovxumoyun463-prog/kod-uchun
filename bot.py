@@ -19,7 +19,7 @@ from aiogram.filters import Command, CommandStart, CommandObject, ChatMemberUpda
 from aiogram.types import (
     Message, CallbackQuery, ChatMemberUpdated, ChatPermissions,
     InlineKeyboardMarkup, InlineKeyboardButton,
-    ReplyKeyboardMarkup, KeyboardButton,
+    ReplyKeyboardMarkup, KeyboardButton, BotCommand,
 )
 
 load_dotenv()
@@ -607,6 +607,13 @@ async def on_menu_telegram(message: Message):
     await message.answer("Kerakli bo'limni tanlang:", reply_markup=keyboard)
 
 
+@rules_router.message(Command("yordam"))
+async def cmd_yordam(message: Message):
+    if message.chat.type != "private":
+        return
+    await message.answer("Savol yoki shikoyatlar uchun: @uz_mp")
+
+
 @rules_router.message(F.text)
 async def on_private_fallback(message: Message):
     if message.chat.type != "private":
@@ -631,6 +638,13 @@ async def main():
     dp.include_router(rules_router)
     dp.include_router(captcha_router)
     dp.include_router(moderation_router)
+
+    await bot.set_my_commands([
+        BotCommand(command="start", description="Botni ishga tushirish"),
+        BotCommand(command="qoidalar", description="Guruh qoidalari"),
+        BotCommand(command="funksiyalar", description="Bot funksiyalari"),
+        BotCommand(command="yordam", description="Yordam olish"),
+    ])
 
     logger.info("Bot ishga tushdi...")
     await bot.delete_webhook(drop_pending_updates=True)
