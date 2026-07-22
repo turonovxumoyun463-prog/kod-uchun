@@ -19,6 +19,7 @@ from aiogram.filters import Command, CommandStart, CommandObject, ChatMemberUpda
 from aiogram.types import (
     Message, CallbackQuery, ChatMemberUpdated, ChatPermissions,
     InlineKeyboardMarkup, InlineKeyboardButton,
+    ReplyKeyboardMarkup, KeyboardButton,
 )
 
 load_dotenv()
@@ -29,6 +30,17 @@ ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 # Majburiy obuna uchun kanal
 CHANNEL_USERNAME = "@kotibchi"
 CHANNEL_URL = f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"
+
+RULES_URL = "https://telegra.ph/Guruh-Qoidalari-07-22-3"
+EXTRA_LINK_URL = "https://t.me/xumoyunjon/242"
+
+MAIN_MENU = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="\U0001F4E2 Kanal"), KeyboardButton(text="\U0001F4CB Qoidalar")],
+        [KeyboardButton(text="\U0001F198 Yordam"), KeyboardButton(text="\U0001F4F1 Telegram")],
+    ],
+    resize_keyboard=True,
+)
 
 CAPTCHA_TIMEOUT = 90
 
@@ -497,15 +509,10 @@ async def cmd_start(message: Message, command: CommandObject, bot: Bot):
     if arg == "qoidalar":
         await message.answer(RULES_TEXT)
     else:
-        info_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="\U0001F4CB Qoidalar", callback_data="show_rules")],
-            [InlineKeyboardButton(text="\u2699\uFE0F Funksiyalar", callback_data="show_features")],
-        ])
         await message.answer(
             "\U0001F44B Salom! Men guruhingizni nazorat qiluvchi botman.\n\n"
-            "Qoidalarni ko'rish uchun guruhdagi \"\U0001F4CB Qoidalar\" tugmasini bosing "
-            "yoki /qoidalar buyrug'ini yuboring.",
-            reply_markup=info_keyboard,
+            "Pastdagi menyudan kerakli bo'limni tanlang.",
+            reply_markup=MAIN_MENU,
         )
 
 
@@ -554,25 +561,41 @@ async def cmd_features(message: Message, bot: Bot):
     await message.answer(FEATURES_TEXT, reply_markup=keyboard)
 
 
-@rules_router.callback_query(F.data == "show_rules")
-async def on_show_rules(callback: CallbackQuery):
-    await callback.message.edit_text(RULES_TEXT)
-    await callback.answer()
-
-
-@rules_router.callback_query(F.data == "show_features")
-async def on_show_features(callback: CallbackQuery):
-    await callback.message.edit_text(FEATURES_TEXT)
-    await callback.answer()
-
-
-@rules_router.message(Command("funksiyalar"))
-async def cmd_features(message: Message, bot: Bot):
-    me = await bot.get_me()
+@rules_router.message(F.text == "\U0001F4E2 Kanal")
+async def on_menu_channel(message: Message):
+    if message.chat.type != "private":
+        return
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="\U0001F4CB Qoidalar", url=f"https://t.me/{me.username}?start=qoidalar")],
+        [InlineKeyboardButton(text="\U0001F4E2 Kanalga o'tish", url=CHANNEL_URL)],
     ])
-    await message.answer(FEATURES_TEXT, reply_markup=keyboard)
+    await message.answer("Bizning kanal:", reply_markup=keyboard)
+
+
+@rules_router.message(F.text == "\U0001F4CB Qoidalar")
+async def on_menu_rules(message: Message):
+    if message.chat.type != "private":
+        return
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="\U0001F4D6 Qoidalarni o'qish", url=RULES_URL)],
+    ])
+    await message.answer("Guruh qoidalari:", reply_markup=keyboard)
+
+
+@rules_router.message(F.text == "\U0001F198 Yordam")
+async def on_menu_help(message: Message):
+    if message.chat.type != "private":
+        return
+    await message.answer("Savol yoki shikoyatlar uchun: @uz_mp")
+
+
+@rules_router.message(F.text == "\U0001F4F1 Telegram")
+async def on_menu_telegram(message: Message):
+    if message.chat.type != "private":
+        return
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="\U0001F4F1 Ochish", url=EXTRA_LINK_URL)],
+    ])
+    await message.answer("Havola:", reply_markup=keyboard)
 
 
 async def main():
