@@ -26,6 +26,10 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 
+# Majburiy obuna uchun kanal
+CHANNEL_USERNAME = "@kotibchi"
+CHANNEL_URL = f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"
+
 CAPTCHA_TIMEOUT = 90
 
 BANNED_WORD_MUTE_MINUTES = 3
@@ -37,19 +41,35 @@ FLOOD_WINDOW_SECONDS = 15
 DATA_FILE = "warnings.json"
 
 BANNED_WORDS = [
-    "sozx1",
-    "sozx2",
+    "so'kinish",
+    "reklama",
+    "haqorat",
+    "scam",
+    "ton",
+    "olib beraman",
+    "konkurs",
+    "boshlandi",
+    "gift",
+    "premium",
+    "sovg'a",
+    "yozganga",
+    "sotiladi",
+    "ming",
 ]
 
-RULES_TEXT = """📋 <b>Guruh qoidalari</b>
-Asosiy qoida: BANNED_WORDS = ["so'kinish", "reklama", "haqorat", "scam", "ton", "olib beraman", "konkurs", "boshlandi", "gift", "premium", "sovg'a", "yozganga", "bot", "sotiladi",  "ming"]
-1. Haqoratli behayo yoki nomaqbul so'zlar taqiqlanadi.
-2. Ketma-ket ko'p xabar yuborish (flood) taqiqlanadi.
-3. Guruh mavzusiga aloqasi bo'lmagan kontent yubormang.
-4. Boshqa a'zolarni hurmat qiling.
+RULES_TEXT = """\U0001F4CB <b>Guruh qoidalari</b>
 
-Qoidabuzarlik uchun avval ogohlantirish, so'ngra vaqtinchalik cheklov (mute) qo'llaniladi.
-Cheklovni faqat guruh adminlari bekor qila oladi.
+1\uFE0F\u20E3 Guruh reklama qilish taqiqlanadi. /ban yoki /mute qo'llaniladi.
+2\uFE0F\u20E3 Boshqa kanallardan xabar forward qilish (yuborish) taqiqlanadi.
+3\uFE0F\u20E3 Quyidagi so'zlarni ishlatish taqiqlanadi: so'kinish, reklama, haqorat, scam, ton, olib beraman, konkurs, boshlandi, gift, premium, sovg'a, yozganga, sotiladi, ming.
+4\uFE0F\u20E3 Shaxsiy adovat va diniy qarashlar haqida suhbat yuritish taqiqlanadi.
+5\uFE0F\u20E3 Guruh a'zolarini hurmat qilgan holda guruhdan foydalanishingizni so'raymiz.
+
+\u26A0\uFE0F Qoidabuzarlik uchun ogohlantirish, so'ngra vaqtinchalik cheklov (mute) qo'llaniladi.
+\U0001F46E Cheklovni faqat guruh adminlari bekor qila oladi.
+\U0001F4E2 Botdan foydalanish uchun @kotibchi kanaliga a'zo bo'lishingiz kerak.
+
+Savol yoki shikoyatlar uchun: @uz_mp
 """
 
 logging.basicConfig(level=logging.INFO)
@@ -100,12 +120,30 @@ def contains_profanity(text: str) -> bool:
     return any(word.lower() in lowered for word in BANNED_WORDS)
 
 
+def find_banned_word(text: str):
+    if not text:
+        return None
+    lowered = text.lower()
+    for word in BANNED_WORDS:
+        if word.lower() in lowered:
+            return word
+    return None
+
+
 async def is_user_admin(bot: Bot, chat_id: int, user_id: int) -> bool:
     if user_id in ADMIN_IDS:
         return True
     try:
         member = await bot.get_chat_member(chat_id, user_id)
         return member.status in ("administrator", "creator")
+    except Exception:
+        return False
+
+
+async def is_subscribed(bot: Bot, user_id: int) -> bool:
+    try:
+        member = await bot.get_chat_member(CHANNEL_USERNAME, user_id)
+        return member.status in ("member", "administrator", "creator")
     except Exception:
         return False
 
@@ -225,7 +263,8 @@ async def moderate_message(message: Message, bot: Bot):
     me = await bot.get_me()
     keyboard = _violation_keyboard(me.username, message.chat.id, user.id)
 
-    if contains_profanity(text):
+    matched_word = find_banned_word(text)
+    if matched_word:
         try:
             await message.delete()
         except Exception as e:
@@ -238,7 +277,7 @@ async def moderate_message(message: Message, bot: Bot):
         await bot.send_message(
             message.chat.id,
             f"⚠️ {mention} ogohlantirildi va cheklandi.\n"
-            f"Sababi: taqiqlangan so'z ishlatdi\n"
+            f"Sababi: taqiqlangan so'z ishlatdi (\"{matched_word}\")\n"
             f"Holati: {BANNED_WORD_MUTE_MINUTES} daqiqalik yoza olmaslik rejimida",
             reply_markup=keyboard,
         )
@@ -413,17 +452,50 @@ rules_router = Router()
 
 
 @rules_router.message(CommandStart())
-async def cmd_start(message: Message, command: CommandObject):
+async def cmd_start(message: Message, command: CommandObject, bot: Bot):
     if message.chat.type != "private":
         return
-    if command.args == "qoidalar":
+
+    arg = command.args or "none"
+
+    if not await is_subscribed(bot, message.from_user.id):
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="\U0001F4E2 Kanalga a'zo bo'lish", url=CHANNEL_URL)],
+            [InlineKeyboardButton(text="\u2705 Tekshirish", callback_data=f"checksub_{arg}")],
+        ])
+        await message.answer(
+            "\U0001F512 Botdan foydalanish uchun avval kanalimizga a'zo bo'ling, "
+            "so'ngra \"\u2705 Tekshirish\" tugmasini bosing.",
+            reply_markup=keyboard,
+        )
+        return
+
+    if arg == "qoidalar":
         await message.answer(RULES_TEXT)
     else:
         await message.answer(
-            "👋 Salom! Men guruhingizni nazorat qiluvchi botman.\n\n"
-            "Qoidalarni ko'rish uchun guruhdagi \"📋 Qoidalar\" tugmasini bosing "
+            "\U0001F44B Salom! Men guruhingizni nazorat qiluvchi botman.\n\n"
+            "Qoidalarni ko'rish uchun guruhdagi \"\U0001F4CB Qoidalar\" tugmasini bosing "
             "yoki /qoidalar buyrug'ini yuboring."
         )
+
+
+@rules_router.callback_query(F.data.startswith("checksub_"))
+async def on_checksub(callback: CallbackQuery, bot: Bot):
+    if not await is_subscribed(bot, callback.from_user.id):
+        await callback.answer("Hali kanalga a'zo bo'lmagansiz!", show_alert=True)
+        return
+
+    arg = callback.data.split("_", 1)[1]
+
+    if arg == "qoidalar":
+        await callback.message.edit_text(RULES_TEXT)
+    else:
+        await callback.message.edit_text(
+            "\u2705 Rahmat! Endi botdan to'liq foydalanishingiz mumkin.\n\n"
+            "Qoidalarni ko'rish uchun /qoidalar buyrug'ini yuboring."
+        )
+    await callback.answer("Tasdiqlandi!")
 
 
 @rules_router.message(Command("qoidalar"))
