@@ -607,6 +607,16 @@ async def on_menu_telegram(message: Message):
     await message.answer("Kerakli bo'limni tanlang:", reply_markup=keyboard)
 
 
+@rules_router.message(F.text)
+async def on_private_fallback(message: Message):
+    if message.chat.type != "private":
+        return
+    await message.answer(
+        "Agar spam haqida xabar bermoqchi bo'lsangiz, shu yerga yozing.\n"
+        "Aks holda savol-murojaatlar uchun: @uz_mp"
+    )
+
+
 async def main():
     if not BOT_TOKEN:
         raise RuntimeError(
