@@ -593,9 +593,18 @@ async def on_menu_telegram(message: Message):
     if message.chat.type != "private":
         return
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="\U0001F4F1 Ochish", url=EXTRA_LINK_URL)],
+        [
+            InlineKeyboardButton(text="\U0001F48E Premium", url="https://t.me/xumoyunjon/140"),
+            InlineKeyboardButton(text="\u2B50 Stars", url="https://t.me/xumoyunjon/125"),
+        ],
+        [
+            InlineKeyboardButton(text="\U0001F381 Profil uchun gift", url="https://t.me/xumoyunjon/145"),
+        ],
+        [
+            InlineKeyboardButton(text="\U0001F4B0 Kanal balansidan Stars yechish", url="https://t.me/xumoyunjon/749"),
+        ],
     ])
-    await message.answer("Havola:", reply_markup=keyboard)
+    await message.answer("Kerakli bo'limni tanlang:", reply_markup=keyboard)
 
 
 async def main():
