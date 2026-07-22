@@ -72,6 +72,30 @@ RULES_TEXT = """\U0001F4CB <b>Guruh qoidalari</b>
 Savol yoki shikoyatlar uchun: @uz_mp
 """
 
+
+FEATURES_TEXT = """\u2699\uFE0F <b>Bot funksiyalari</b>
+
+\U0001F6E1 Taqiqlangan so'zlarni avtomatik bloklaydi
+\U0001F6AB Ketma-ket xabar (flood/spam) yuborishni cheklaydi
+\U0001F464 Yangi a'zolarni captcha orqali tekshiradi
+\U0001F4E2 Kanalga majburiy obunani tekshiradi
+\U0001F46E Adminlar uchun: /ban /unban /mute /unmute /warn /warnings
+
+Qoidalarni ko'rish uchun /qoidalar buyrug'ini yuboring.
+"""
+
+
+FEATURES_TEXT = """\u2699\uFE0F <b>Bot funksiyalari</b>
+
+\U0001F6E1 Taqiqlangan so'zlarni avtomatik bloklaydi
+\U0001F6AB Ketma-ket xabar (flood/spam) yuborishni cheklaydi
+\U0001F464 Yangi a'zolarni captcha orqali tekshiradi
+\U0001F4E2 Kanalga majburiy obunani tekshiradi
+\U0001F46E Adminlar uchun: /ban /unban /mute /unmute /warn /warnings
+
+Qoidalarni ko'rish uchun /qoidalar buyrug'ini yuboring.
+"""
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("tg_mod_bot")
 
@@ -473,10 +497,15 @@ async def cmd_start(message: Message, command: CommandObject, bot: Bot):
     if arg == "qoidalar":
         await message.answer(RULES_TEXT)
     else:
+        info_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="\U0001F4CB Qoidalar", callback_data="show_rules")],
+            [InlineKeyboardButton(text="\u2699\uFE0F Funksiyalar", callback_data="show_features")],
+        ])
         await message.answer(
             "\U0001F44B Salom! Men guruhingizni nazorat qiluvchi botman.\n\n"
             "Qoidalarni ko'rish uchun guruhdagi \"\U0001F4CB Qoidalar\" tugmasini bosing "
-            "yoki /qoidalar buyrug'ini yuboring."
+            "yoki /qoidalar buyrug'ini yuboring.",
+            reply_markup=info_keyboard,
         )
 
 
@@ -502,6 +531,48 @@ async def on_checksub(callback: CallbackQuery, bot: Bot):
 async def cmd_rules(message: Message):
     if message.chat.type == "private":
         await message.answer(RULES_TEXT)
+
+
+@rules_router.callback_query(F.data == "show_rules")
+async def on_show_rules(callback: CallbackQuery):
+    await callback.message.edit_text(RULES_TEXT)
+    await callback.answer()
+
+
+@rules_router.callback_query(F.data == "show_features")
+async def on_show_features(callback: CallbackQuery):
+    await callback.message.edit_text(FEATURES_TEXT)
+    await callback.answer()
+
+
+@rules_router.message(Command("funksiyalar"))
+async def cmd_features(message: Message, bot: Bot):
+    me = await bot.get_me()
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="\U0001F4CB Qoidalar", url=f"https://t.me/{me.username}?start=qoidalar")],
+    ])
+    await message.answer(FEATURES_TEXT, reply_markup=keyboard)
+
+
+@rules_router.callback_query(F.data == "show_rules")
+async def on_show_rules(callback: CallbackQuery):
+    await callback.message.edit_text(RULES_TEXT)
+    await callback.answer()
+
+
+@rules_router.callback_query(F.data == "show_features")
+async def on_show_features(callback: CallbackQuery):
+    await callback.message.edit_text(FEATURES_TEXT)
+    await callback.answer()
+
+
+@rules_router.message(Command("funksiyalar"))
+async def cmd_features(message: Message, bot: Bot):
+    me = await bot.get_me()
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="\U0001F4CB Qoidalar", url=f"https://t.me/{me.username}?start=qoidalar")],
+    ])
+    await message.answer(FEATURES_TEXT, reply_markup=keyboard)
 
 
 async def main():
